@@ -709,6 +709,26 @@
     color: var(--muted);
     font-family: 'DM Mono', monospace;
   }
+
+  /* ── DEMO BUTTON ── */
+  .btn-demo {
+    margin-top: 1.5rem;
+    background: transparent;
+    border: 1px solid rgba(255,107,0,0.5);
+    color: var(--orange);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 10px 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-demo:hover {
+    background: rgba(255,107,0,0.12);
+    border-color: var(--orange);
+  }
 </style>
 </head>
 <body>
@@ -760,6 +780,7 @@
         <div class="scoring-pill">Championship = <strong>8 pts</strong></div>
         <div class="scoring-pill">Max possible = <strong>16 pts</strong></div>
       </div>
+      <button class="btn-demo" onclick="loadDemoData()">▶ Try Demo — See a Live Example</button>
     </div>
     <div style="padding: 2rem;">
       <div class="reg-card">
@@ -1680,12 +1701,73 @@ function showToast(msg, type = 'success') {
 }
 
 // ════════════════════════════════════════════════════════════
+// DEMO DATA
+// ════════════════════════════════════════════════════════════
+// Pre-built snapshot: Sweet 16 complete, Elite Eight matchups pending.
+// Six players illustrate the full range of standings.
+const DEMO_STATE = {
+  players: [
+    { id:'demo_p1', name:'Alex Johnson',  email:'', picks:['E1','W1','S1','M1'], submittedAt:'2026-03-17T10:00:00.000Z' },
+    { id:'demo_p2', name:'Sam Rivera',    email:'', picks:['E2','W2','S2','M2'], submittedAt:'2026-03-17T10:15:00.000Z' },
+    { id:'demo_p3', name:'Jordan Kim',    email:'', picks:['E1','M2','S1','W3'], submittedAt:'2026-03-17T10:30:00.000Z' },
+    { id:'demo_p4', name:'Casey Park',    email:'', picks:['E2','S1','M1','W4'], submittedAt:'2026-03-17T10:45:00.000Z' },
+    { id:'demo_p5', name:'Taylor Brooks', email:'', picks:['E3','W3','S3','M3'], submittedAt:'2026-03-17T11:00:00.000Z' },
+    { id:'demo_p6', name:'Morgan Davis',  email:'', picks:['E4','W6','S7','M6'], submittedAt:'2026-03-17T11:15:00.000Z' },
+  ],
+  results: {
+    // ── Round of 64 ──────────────────────────────────────
+    // East
+    'R0_0':'E1',  'R0_1':'E9',  'R0_2':'E5',  'R0_3':'E4',
+    'R0_4':'E6',  'R0_5':'E3',  'R0_6':'E7',  'R0_7':'E2',
+    // West
+    'R0_8':'W1',  'R0_9':'W9',  'R0_10':'W5', 'R0_11':'W4',
+    'R0_12':'W6', 'R0_13':'W3', 'R0_14':'W10','R0_15':'W2',
+    // South
+    'R0_16':'S1',  'R0_17':'S8',   'R0_18':'S5_1','R0_19':'S4',
+    'R0_20':'S6_2','R0_21':'S3',   'R0_22':'S7',  'R0_23':'S2',
+    // Midwest
+    'R0_24':'M1', 'R0_25':'M9',  'R0_26':'M5', 'R0_27':'M4',
+    'R0_28':'M6', 'R0_29':'M3',  'R0_30':'M10','R0_31':'M2',
+    // ── Round of 32 ──────────────────────────────────────
+    // East: Duke, Purdue, Iowa State (upset), UConn
+    'R1_0':'E1', 'R1_1':'E4', 'R1_2':'E3', 'R1_3':'E2',
+    // West: Florida, Wisconsin, Alabama, Michigan State
+    'R1_4':'W1', 'R1_5':'W4', 'R1_6':'W3', 'R1_7':'W2',
+    // South: Auburn, N. Carolina (upset), Nebraska (upset), St. John's
+    'R1_8':'S1',  'R1_9':'S5_1','R1_10':'S3','R1_11':'S2',
+    // Midwest: Houston, Indiana (upset), Baylor, Gonzaga
+    'R1_12':'M1','R1_13':'M4','R1_14':'M3','R1_15':'M2',
+    // ── Sweet 16 ─────────────────────────────────────────
+    // East: Duke, UConn
+    'R2_0':'E1', 'R2_1':'E2',
+    // West: Florida, Michigan State (upset over Alabama)
+    'R2_2':'W1', 'R2_3':'W2',
+    // South: Auburn, St. John's (upset over Nebraska)
+    'R2_4':'S1', 'R2_5':'S2',
+    // Midwest: Houston, Gonzaga (over Baylor)
+    'R2_6':'M1', 'R2_7':'M2',
+    // ── Elite Eight pending ───────────────────────────────
+    // R3_0 Duke vs UConn, R3_1 Florida vs MSU,
+    // R3_2 Auburn vs St. John's, R3_3 Houston vs Gonzaga
+  },
+  declaredWinner: null,
+};
+
+function loadDemoData() {
+  if (!confirm('Load demo data? This will replace any current picks and results with a sample tournament in progress (Sweet 16 complete, Elite Eight upcoming).')) return;
+  STATE = JSON.parse(JSON.stringify(DEMO_STATE));
+  saveState();
+  showToast('Demo loaded — Sweet 16 complete, Elite Eight next!', 'success');
+  showView('dashboard');
+}
+
+// ════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // If URL has #dashboard, show that
   if (location.hash === '#dashboard') showView('dashboard');
   if (location.hash === '#admin') showView('admin');
+  if (location.hash === '#demo') loadDemoData();
 });
 </script>
 </body>
