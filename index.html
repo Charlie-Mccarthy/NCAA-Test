@@ -415,6 +415,24 @@
       <h2>🏆 Leaderboard <span class="live-badge"><span class="live-dot"></span>LIVE</span></h2>
       <p>Real-time standings — updates automatically as results come in. Only approved entries shown.</p>
     </div>
+    <div id="leaderboardHiddenBanner" style="display:none;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius);padding:2rem;text-align:center;margin-bottom:1.5rem;">
+      <div style="font-size:2rem;margin-bottom:0.5rem">🔒</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--orange);margin-bottom:0.5rem">Leaderboard Hidden</div>
+      <div style="color:var(--muted);font-size:0.9rem">The leaderboard will be revealed once the tournament begins.</div>
+    </div>
+    <div id="dashMainContent">
+    <div id="entryCountWidget" style="display:flex;align-items:center;gap:1rem;background:var(--dark2);border:1px solid var(--mid);border-radius:var(--radius);padding:0.9rem 1.4rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Approved Entries</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;color:var(--orange);line-height:1" id="approvedCountDisplay">0</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--mid)"></div>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Total Submitted</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;color:var(--muted);line-height:1" id="totalCountDisplay">0</div>
+      </div>
+    </div>
+
     <div class="dash-grid">
       <div class="card">
         <div class="card-header">
@@ -431,6 +449,7 @@
       <div class="card-header"><h3>2026 Most Picked Teams</h3><span>CURRENT FIELD</span></div>
       <div class="card-body overflow-x" id="pickFreqBody"></div>
     </div>
+    </div><!-- end dashMainContent -->
     <div class="tiebreaker-footnote">
       <strong>* Tiebreakers:</strong> 1st — team that advances furthest wins; 2nd — if equal, compare second-furthest team (and so on); Final — split if selections are identical.
 
@@ -529,6 +548,7 @@
 
       <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
         <button id="entryLockBtn" class="btn-lock unlocked" onclick="toggleEntryLock()">🔓 Entries Open — Click to Lock</button>
+        <button id="leaderboardHideBtn" class="btn-lock unlocked" onclick="toggleLeaderboardHidden()">👁 Leaderboard Visible — Click to Hide</button>
         <span style="font-size:0.8rem;color:var(--muted)">Locking prevents all new submissions and changes.</span>
       </div>
 
@@ -550,7 +570,7 @@
           <table class="picks-table">
             <thead><tr>
               <th>Player</th><th>Email</th><th>Picks</th>
-              <th>Submitted (CT)</th><th>Approved (CT)</th>
+              <th>Submitted (CT)</th>
               <th>Score</th><th>Max</th><th>Status</th><th>Actions</th>
             </tr></thead>
             <tbody id="adminPlayerRows"></tbody>
@@ -712,7 +732,7 @@ function getTeam(id){ return FIELD.find(t=>t.id===id); }
 // LOCAL STATE (synced from Firestore)
 // ════════════════════════════════════════
 let GS = {            // gameState/main document
-  results:{}, lockedRounds:[], entriesLocked:false,
+  results:{}, lockedRounds:[], entriesLocked:false, leaderboardHidden:false,
   places:{1:null,2:null,3:null,4:null}
 };
 let PLAYERS = [];     // array of player docs
@@ -777,6 +797,7 @@ function startListeners(){
       GS.results       = d.results       || {};
       GS.lockedRounds  = d.lockedRounds  || [];
       GS.entriesLocked = d.entriesLocked || false;
+      GS.leaderboardHidden = d.leaderboardHidden || false;
       GS.places        = d.places        || {1:null,2:null,3:null,4:null};
     }
     updateEntryLockUI();
@@ -1039,12 +1060,24 @@ function setLbSort(mode){
 
 function renderDashboard(){
   const approved=PLAYERS.filter(p=>p.approved);
+  const countEl=document.getElementById('approvedCountDisplay');
+  const totalEl=document.getElementById('totalCountDisplay');
+  if(countEl) countEl.textContent=approved.length;
+  if(totalEl) totalEl.textContent=PLAYERS.length;
   const{scores,maxScores,elimSet}=computeScores(approved);
   const sortedByScore=[...approved].sort((a,b)=>(scores[b.id]||0)-(scores[a.id]||0));
   const sortedByMax=[...approved].sort((a,b)=>(maxScores[b.id]||0)-(maxScores[a.id]||0));
   const sorted=lbSortMode==='max'?sortedByMax:sortedByScore;
   const placeEmoji={1:'🥇',2:'🥈',3:'🥉',4:'4️⃣'};
 
+  const hiddenBanner=document.getElementById('leaderboardHiddenBanner');
+  const dashContent=document.getElementById('dashMainContent');
+  if(hiddenBanner){
+    hiddenBanner.style.display=GS.leaderboardHidden?'block':'none';
+  }
+  if(dashContent){
+    dashContent.style.display=GS.leaderboardHidden?'none':'block';
+  }
   const lb=document.getElementById('leaderboardBody');
   if(!lb)return;
   if(sorted.length===0){
@@ -1193,7 +1226,6 @@ function buildPlayerRow(p, scores, maxScores, elimSet){
     + '<td style="font-size:0.8rem;color:#666">' + p.email + '</td>'
     + '<td>' + pickTags + '</td>'
     + '<td style="' + dm + ';font-size:0.8rem;white-space:nowrap">' + formatCT(p.submittedAt) + '</td>'
-    + '<td style="' + dm + ';font-size:0.8rem;white-space:nowrap">' + formatCT(p.approvedAt) + '</td>'
     + '<td style="' + dm + ';color:#FF6B00">' + (scores[p.id]||0) + '</td>'
     + '<td style="' + dm + ';color:#666">' + (maxScores[p.id]||0) + '</td>'
     + '<td>' + statusBadge + '</td>'
@@ -1212,6 +1244,8 @@ function renderAdmin(){
   const lb=document.getElementById('entryLockBtn');
   if(GS.entriesLocked){ lb.className='btn-lock locked'; lb.textContent='🔒 Entries Locked — Click to Unlock'; }
   else { lb.className='btn-lock unlocked'; lb.textContent='🔓 Entries Open — Click to Lock'; }
+  const lhb=document.getElementById('leaderboardHideBtn');
+  if(lhb){ if(GS.leaderboardHidden){ lhb.className='btn-lock locked'; lhb.textContent='👁 Leaderboard Hidden — Click to Show'; } else { lhb.className='btn-lock unlocked'; lhb.textContent='👁 Leaderboard Visible — Click to Hide'; }}
 
   // Bracket
   const games=buildFullBracket();
@@ -1266,7 +1300,7 @@ function renderAdmin(){
   const tbody=document.getElementById('adminPlayerRows');
   const sortedPlayers=[...PLAYERS].sort((a,b)=>new Date(b.submittedAt||0)-new Date(a.submittedAt||0));
   tbody.innerHTML=sortedPlayers.length===0
-    ?'<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">No players yet</td></tr>'
+    ?'<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">No players yet</td></tr>'
     :sortedPlayers.map(p=>buildPlayerRow(p,scores,maxScores,elimSet)).join('');
   // Tracking
   const trows=document.getElementById('trackingRows');
@@ -1318,6 +1352,9 @@ function clearDownstreamKeys(key,resultsObj){
   cd(key);
 }
 
+async function toggleLeaderboardHidden(){
+  await gameStateRef.set({leaderboardHidden:!GS.leaderboardHidden},{merge:true});
+}
 async function toggleEntryLock(){
   await gameStateRef.set({entriesLocked:!GS.entriesLocked},{merge:true});
 }
@@ -1518,6 +1555,7 @@ window.addEventListener('DOMContentLoaded',async ()=>{
       GS.results=d.results||{};
       GS.lockedRounds=d.lockedRounds||[];
       GS.entriesLocked=d.entriesLocked||false;
+      GS.leaderboardHidden=d.leaderboardHidden||false;
       GS.places=d.places||{1:null,2:null,3:null,4:null};
     } else {
       await gameStateRef.set({results:{},lockedRounds:[],entriesLocked:false,places:{1:null,2:null,3:null,4:null}});
