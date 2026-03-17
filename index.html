@@ -369,10 +369,9 @@
         <h2>Enter to Play</h2>
         <div class="field-group"><label>Your Name</label><input type="text" id="playerName" placeholder="e.g. Jamie Whitfield"></div>
         <div class="field-group"><label>Email Address <span style="color:var(--red)">*</span></label><input type="email" id="playerEmail" placeholder="you@example.com"></div>
-        <button class="btn-primary" id="mainPlayBtn" onclick="startPicking()">Submit My Picks →</button>
+        <button class="btn-primary" id="mainPlayBtn" onclick="startPicking()">Submit or Change My Picks →</button>
         <p style="margin-top:0.75rem;font-size:0.82rem;color:var(--muted);text-align:center">
-          Already submitted? Enter your name &amp; email above, then
-          <button id="changePicksBtn" onclick="returnToMyPicks()" style="background:none;border:none;color:var(--orange);cursor:pointer;font-size:0.82rem;font-family:'DM Sans',sans-serif;text-decoration:underline;padding:0">view or change your picks</button>.
+          <button id="changePicksBtn" onclick="viewCurrentPicks()" style="background:none;border:none;color:var(--orange);cursor:pointer;font-size:0.82rem;font-family:'DM Sans',sans-serif;text-decoration:underline;padding:0">View my Current Picks</button>
         </p>
       </div>
     </div>
@@ -406,6 +405,7 @@
       <div class="pending-note" id="pendingNote">⏳ Your entry is pending approval by the admin. You'll appear on the leaderboard once approved.</div>
       <div class="picks-summary" id="confirmPicks"></div>
       <button class="btn-primary" onclick="showView('dashboard')">View Leaderboard →</button>
+      <button id="confirmChangeBtn" class="btn-secondary" style="display:none;margin-top:0.5rem" onclick="startChangingPicks()">✏️ Change My Picks</button>
       <p class="created-by">Created by Charlie and Claude</p>
     </div>
   </div>
@@ -927,7 +927,7 @@ function startPicking(){
     }
     isChangingPicks=true; changingPlayerId=existing.id;
     currentSelections=[...(existing.picks||[])];
-    document.getElementById('pickerTitle').textContent='Change Your Selections';
+    document.getElementById('pickerTitle').textContent='Update Your Selections';
     showStep('step-pick'); renderTeamPicker(); return;
   }
   isChangingPicks=false; changingPlayerId=null; currentSelections=[];
@@ -937,6 +937,26 @@ function startPicking(){
 
 function isValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
+function startChangingPicks(){
+  const name=document.getElementById('playerName').value.trim();
+  const email=document.getElementById('playerEmail').value.trim();
+  const existing=PLAYERS.find(p=>p.name.toLowerCase()===name.toLowerCase()&&p.email.toLowerCase()===email.toLowerCase());
+  if(!existing){ showToast('Please re-enter your name and email','error'); showStep('step-register'); return; }
+  isChangingPicks=true; changingPlayerId=existing.id;
+  currentSelections=[...(existing.picks||[])];
+  document.getElementById('pickerTitle').textContent='Change Your Selections';
+  showStep('step-pick'); renderTeamPicker();
+}
+function viewCurrentPicks(){
+  if(!PLAYERS.length){ showToast('No submissions found yet','error'); return; }
+  const name=document.getElementById('playerName').value.trim();
+  const email=document.getElementById('playerEmail').value.trim();
+  if(!name||!email){ showToast('Enter your name and email above first','error'); return; }
+  const p=PLAYERS.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(!p){ showToast('No picks found for that name','error'); return; }
+  if(p.email.toLowerCase()!==email.toLowerCase()){ showToast('Email does not match our records','error'); return; }
+  showConfirmation(p,false,true);
+}
 function returnToMyPicks(){
   if(GS.entriesLocked){ showToast('Entries are locked','error'); return; }
   const name=document.getElementById('playerName').value.trim();
@@ -1033,15 +1053,19 @@ async function submitPicks(){
   } catch(e){ showToast('Error saving: '+e.message,'error'); }
 }
 
-function showConfirmation(player,justSubmitted){
+function showConfirmation(player,justSubmitted,readOnly){
   document.getElementById('confirmGreeting').textContent=justSubmitted
     ?`Thanks, ${player.name}! Your picks are saved and awaiting admin approval.`
-    :`Here are your current picks, ${player.name}.`;
-  document.getElementById('pendingNote').style.display=(!player.approved)?'block':'none';
+    :readOnly
+      ?`Here are your current picks, ${player.name}.`
+      :`Welcome back, ${player.name}! Update your picks below.`;
+  document.getElementById('pendingNote').style.display=(!player.approved&&!readOnly)?'block':'none';
   const el=document.getElementById('confirmPicks');
   el.innerHTML='<h3>Your 4 Picks</h3>'+(player.picks||[]).map(id=>{
     const t=getTeam(id); return t?`<div class="pick-row"><span>${t.name}</span><span class="pick-seed">#${t.seed} ${t.region}</span></div>`:'';
   }).join('');
+  const changeBtn=document.getElementById('confirmChangeBtn');
+  if(changeBtn) changeBtn.style.display=readOnly?'none':'block';
   showStep('step-confirm');
 }
 
