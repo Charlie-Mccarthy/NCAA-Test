@@ -355,8 +355,8 @@
         <div class="scoring-pill">Elite 8 = <strong>seed × 2</strong></div>
         <div class="scoring-pill">Final 4 = <strong>seed × 4</strong></div>
         <div class="scoring-pill">Championship = <strong>seed × 8</strong></div>
-        <div class="scoring-pill">#1 seed max = <strong>16 pts</strong></div>
-        <div class="scoring-pill">#16 seed max = <strong>256 pts</strong></div>
+        <div class="scoring-pill">#1 seed max = <strong>17 pts</strong></div>
+        <div class="scoring-pill">#16 seed max = <strong>272 pts</strong></div>
       </div>
     </div>
 
@@ -998,7 +998,7 @@ function updateSelectionUI(){
   let total=0;
   const chips=currentSelections.map(id=>{
     const t=getTeam(id); if(!t)return '';
-    const maxPts=(1+1+1+2+4+8)*t.seed;
+    const maxPts=17*t.seed;
     total+=maxPts;
     return `<span class="max-pts-chip has-team">#${t.seed} ${t.name} = ${maxPts}</span>`;
   });
